@@ -39,6 +39,7 @@ hs1/
 ├── srv/                                      one Docker Compose project per dir
 │   ├── caddy/          TLS reverse proxy, custom build with DigitalOcean DNS plugin
 │   ├── homeassistant/  Home Assistant (host network)
+│   │   └── patches/    temporary library patch (Ring push events), bind-mounted
 │   └── mosquitto/      MQTT broker (host network, 192.168.1.2:1883)
 └── ufw-rules.txt                             firewall rules (`ufw show added`)
 ```
@@ -258,6 +259,39 @@ Fresh install (no restore): onboard at `http://192.168.1.2:8123`, then in
   notifications and the companion app).
 
 Then add the MQTT integration with the `homeassistant` user.
+
+#### Temporary patch: Ring push events (firebase-messaging)
+
+HA 2026.10.4 ships firebase-messaging 0.4.5, whose push listener crashes on
+Ring's current push format (`Incorrect padding, shutting down FcmPushClient`
+about a second after every start). After that, Ring doorbell and motion events
+(`event.front_door_ding` / `_motion`) never fire; only polled sensors update.
+Upstream: [home-assistant/core#173915](https://github.com/home-assistant/core/issues/173915),
+fix not yet merged: [firebase-messaging PR #46](https://github.com/sdb9696/firebase-messaging/pull/46).
+
+`patches/fcmpushclient.py` is the 0.4.5 file with PR #46 applied (head
+`3e33699`), plus one local change: header parsing moved inside the `try`, and
+`http_ece.ECEException` caught too. `patches/fcmpushclient.diff` is the full
+diff against the stock file. `compose.yaml` bind-mounts it over the library
+file (read-only), so a recreate (`docker compose up -d`) is needed after
+changing it.
+
+**On every HA image update**, before `docker compose up -d`:
+
+```bash
+NEW=ghcr.io/home-assistant/home-assistant:<new-tag>
+sudo docker run --rm --entrypoint sh $NEW -c \
+  'pip show firebase-messaging | grep Version; python3 --version'
+```
+
+- Still `0.4.5` and Python 3.14: keep the patch.
+- Python version changed: update the mount path in `compose.yaml`.
+- Newer firebase-messaging: check its release notes for the padding/header fix.
+  If it's fixed, delete the mount line and `patches/`. If not, re-apply PR #46 to
+  the new file rather than mounting the old one over a different version.
+
+Verify after a restart: the log has no `Incorrect padding`, and a doorbell press
+changes `event.front_door_ding`.
 
 #### HACS and custom integrations
 

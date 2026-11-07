@@ -13,3 +13,7 @@ services:
       - ./config:/config
       - /etc/localtime:/etc/localtime:ro
       - /run/dbus:/run/dbus:ro
+      # TEMPORARY: patched firebase-messaging 0.4.5 so Ring push events
+      # (doorbell/motion) work - see patches/ and SETUP.md. The path is tied to
+      # the image's Python version; re-check or remove on every HA update.
+      - ./patches/fcmpushclient.py:/usr/local/lib/python3.14/site-packages/firebase_messaging/fcmpushclient.py:ro
