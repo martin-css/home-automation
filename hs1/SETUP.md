@@ -349,6 +349,12 @@ Notes:
   token. To allow another camera, add its path to `@doorbell_snapshot` in the
   Caddyfile. Fetching the snapshot doesn't create a Ring event; only starting
   live view does.
+- The Ring camera image is a frame from the **latest finished recording**
+  (HA's Ring integration doesn't use Ring's snapshot API). The doorbell alert
+  can show the previous visitor if a new recording isn't ready yet. Accepted
+  for now. Options if it matters: update the PiPup pop-up (same `id`) once
+  `camera.front_door_live_view`'s `last_video_id` changes, or run ring-mqtt for
+  real snapshots (Doorbell Pro 2 supports fast snapshots; evaluated, not done).
 - The Caddyfile is bind-mounted as a single file: overwrite it in place
   (`sudo tee /srv/caddy/Caddyfile < Caddyfile`) and then
   `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile`.
