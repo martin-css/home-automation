@@ -294,8 +294,8 @@ UI edits rewrite the file on hs1, so copy changes back to the repo).
 | Name | What it does |
 |------|--------------|
 | `script.hot_water_boost_1h` / `_cancel` | Hive hot water boost for 1 h / cancel |
-| `script.tv_alert` | Pause the Playroom TV (if on and not on the home screen) and show a PiPup message. Fields: `message`, `title`, `duration`, `pause` |
-| `automation.doorbell_alert_on_tv` | Ring doorbell press -> `tv_alert` "Someone is at the front door"; 30 s debounce |
+| `script.tv_alert` | Pause the Playroom TV (if on and not on the home screen) and show a PiPup message, optionally with a camera snapshot. Fields: `message`, `title`, `duration`, `pause`, `camera` |
+| `automation.doorbell_alert_on_tv` | Ring doorbell press -> `tv_alert` "Someone is at the front door" with the doorbell snapshot; 30 s debounce |
 
 Notes:
 - Neither Playroom TV entity reports "playing" for native apps (Cast shows
@@ -306,6 +306,17 @@ Notes:
 - PiPup needs the PiPup app installed and allowed to draw over other apps on the
   TV. PiPup buttons call back to HA's internal URL, which the TV can't resolve
   (router DNS rebind protection), so the alerts don't use buttons.
+- Snapshots: the TV can't use `ha.home.*` (DNS rebind) or reach port 8123
+  (ufw), so it loads `http://192.168.1.2/api/camera_proxy/<camera>?token=...`
+  from a plain-HTTP Caddy site that passes through **only**
+  `camera.front_door_live_view`; HA still checks the camera's short-lived
+  token. To allow another camera, add its path to `@doorbell_snapshot` in the
+  Caddyfile. Fetching the snapshot doesn't create a Ring event; only starting
+  live view does.
+- The Caddyfile is bind-mounted as a single file: overwrite it in place
+  (`sudo tee /srv/caddy/Caddyfile < Caddyfile`) and then
+  `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile`.
+  Replacing the file (`mv`, `install`) leaves the container on the old copy.
 
 #### Dashboards
 

@@ -23,7 +23,8 @@ hot_water_boost_cancel:
       data:
         on_off: "off"
 
-# Pause the Playroom TV (if on and in an app) and show a PiPup overlay.
+# Pause the Playroom TV (if on and in an app) and show a PiPup overlay,
+# optionally with a camera snapshot.
 # Neither TV entity reports "playing" for native apps (Cast shows idle, Android
 # TV Remote only on/off), so send MEDIA_PAUSE - pause-only, a no-op when
 # already paused - rather than play/pause, which would toggle.
@@ -60,6 +61,16 @@ tv_alert:
       default: true
       selector:
         boolean:
+    camera:
+      name: Camera snapshot
+      description: >-
+        Optional camera to show a snapshot from. The TV loads it via Caddy's
+        plain-HTTP LAN endpoint (http://192.168.1.2), which only passes through
+        cameras allowed in the Caddyfile.
+      example: camera.front_door_live_view
+      selector:
+        entity:
+          domain: camera
   sequence:
     - if:
         - condition: template
@@ -83,13 +94,34 @@ tv_alert:
     - condition: state
       entity_id: binary_sensor.pipup_play_room_tv_connectivity
       state: "on"
-    - action: pipup.send
-      target:
-        entity_id: notify.pipup_play_room_tv
-      data:
-        title: "{{ title | default('Home') }}"
-        message: "{{ message }}"
-        duration: "{{ duration | default(15) | int }}"
-        position: 4
-        urgency: warning
-      continue_on_error: true
+    - variables:
+        # entity_picture is /api/camera_proxy/<camera>?token=<short-lived token>
+        image_path: "{{ state_attr(camera, 'entity_picture') if camera is defined and camera else '' }}"
+    - if:
+        - condition: template
+          value_template: "{{ image_path | length > 0 }}"
+      then:
+        - action: pipup.send
+          target:
+            entity_id: notify.pipup_play_room_tv
+          data:
+            title: "{{ title | default('Home') }}"
+            message: "{{ message }}"
+            duration: "{{ duration | default(15) | int }}"
+            position: 4
+            urgency: warning
+            image_uri: "http://192.168.1.2{{ image_path }}"
+            media_width: 640
+            media_position: 0
+          continue_on_error: true
+      else:
+        - action: pipup.send
+          target:
+            entity_id: notify.pipup_play_room_tv
+          data:
+            title: "{{ title | default('Home') }}"
+            message: "{{ message }}"
+            duration: "{{ duration | default(15) | int }}"
+            position: 4
+            urgency: warning
+          continue_on_error: true

@@ -23,5 +23,6 @@
         title: Front door
         message: Someone is at the front door
         duration: 20
+        camera: camera.front_door_live_view
     # Debounce repeated presses (mode: single drops triggers while running).
     - delay: { seconds: 30 }

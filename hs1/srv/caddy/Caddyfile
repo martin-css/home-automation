@@ -27,3 +27,20 @@
 		abort
 	}
 }
+
+# Plain-HTTP LAN endpoint for devices that can't use the TLS names (router DNS
+# rebind protection blocks ha.home.* on the LAN), e.g. the Playroom TV's PiPup
+# app loading the doorbell snapshot. Only the doorbell camera's snapshot is
+# passed through; HA still requires the camera's short-lived access token.
+http://192.168.1.2 {
+	@doorbell_snapshot {
+		method GET
+		path /api/camera_proxy/camera.front_door_live_view
+	}
+	handle @doorbell_snapshot {
+		reverse_proxy 192.168.1.2:8123
+	}
+	handle {
+		abort
+	}
+}
