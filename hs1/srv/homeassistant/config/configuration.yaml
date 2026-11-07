@@ -7,6 +7,44 @@ script: !include scripts.yaml
 # Automations (also editable in the UI: Settings -> Automations & scenes)
 automation: !include automations.yaml
 
+# Presence -------------------------------------------------------------------
+# person.* come from the companion apps (Settings -> People). Julie has no
+# tracked device, so she has a manual switch; guest mode covers visitors.
+input_boolean:
+  julie_home:
+    name: Julie home
+    icon: mdi:account
+  guest_mode:
+    name: Guest mode
+    icon: mdi:account-multiple
+
+template:
+  - binary_sensor:
+      # Anyone home (tracked person, Julie switch, or guest mode). Turns on
+      # immediately; only turns off after 10 min empty so GPS blips don't fire
+      # away automations. Use this for away/occupied logic, not person.*.
+      - name: Home occupied
+        unique_id: home_occupied
+        device_class: occupancy
+        delay_off: "00:10:00"
+        state: >-
+          {{ states('zone.home') | int(0) > 0
+             or is_state('input_boolean.julie_home', 'on')
+             or is_state('input_boolean.guest_mode', 'on') }}
+        attributes:
+          people_home: >-
+            {% set ns = namespace(n=[]) %}
+            {% for p in states.person | selectattr('state', 'eq', 'home') %}
+              {% set ns.n = ns.n + [p.name] %}
+            {% endfor %}
+            {% if is_state('input_boolean.julie_home', 'on') and 'Julie' not in ns.n %}
+              {% set ns.n = ns.n + ['Julie'] %}
+            {% endif %}
+            {% if is_state('input_boolean.guest_mode', 'on') %}
+              {% set ns.n = ns.n + ['Guests'] %}
+            {% endif %}
+            {{ ns.n | join(', ') if ns.n else 'Nobody' }}
+
 # Dashboards defined in YAML (versioned in git). Edit the file, refresh the
 # browser. Adding/removing a dashboard here needs a restart.
 lovelace:

@@ -13,6 +13,76 @@ views:
     type: sections
     max_columns: 3
     sections:
+      # ---------------------------------------------------------------- People
+      # person.* = companion app trackers; Julie has no tracked device, so her
+      # button toggles input_boolean.julie_home. Home occupied (anyone home,
+      # Julie, or guest mode; 10 min delay before "empty") drives away logic.
+      - type: grid
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: People
+            icon: mdi:account-group
+          - type: custom:bubble-card
+            card_type: button
+            button_type: state
+            entity: person.martin
+            name: Martin
+            grid_options:
+              columns: 6
+            # Green icon background when home, dimmed when away/unknown.
+            styles: &presence_style |
+              .bubble-icon-container {
+                background: ${state === 'home' || state === 'on' ? 'var(--green-color)' : 'var(--disabled-color)'} !important;
+                opacity: ${state === 'home' || state === 'on' ? 1 : 0.5};
+              }
+              .bubble-icon { color: ${state === 'home' || state === 'on' ? 'white' : ''} !important; }
+          - type: custom:bubble-card
+            card_type: button
+            button_type: state
+            entity: person.katie
+            name: Katie
+            grid_options:
+              columns: 6
+            styles: *presence_style
+          - type: custom:bubble-card
+            card_type: button
+            button_type: state
+            entity: person.ethan
+            name: Ethan
+            grid_options:
+              columns: 6
+            styles: *presence_style
+          - type: custom:bubble-card
+            card_type: button
+            button_type: switch
+            entity: input_boolean.julie_home
+            name: Julie
+            icon: mdi:account
+            state_content: "{{ 'Home' if is_state('input_boolean.julie_home', 'on') else 'Away' }}"
+            grid_options:
+              columns: 6
+            styles: *presence_style
+          - type: custom:bubble-card
+            card_type: button
+            button_type: state
+            entity: binary_sensor.home_occupied
+            name: House
+            state_content:
+              - state
+              - people_home
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            button_type: switch
+            entity: input_boolean.guest_mode
+            name: Guests
+            icon: mdi:account-multiple
+            state_content: "{{ 'Guests here' if is_state('input_boolean.guest_mode', 'on') else 'Off' }}"
+            grid_options:
+              columns: 6
+
       # ---------------------------------------------------------------- Front door
       - type: grid
         cards:

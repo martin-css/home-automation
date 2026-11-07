@@ -360,6 +360,27 @@ Notes:
   `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile`.
   Replacing the file (`mv`, `install`) leaves the container on the old copy.
 
+#### Presence
+
+| Entity | Source |
+|--------|--------|
+| `person.martin` / `katie` / `ethan` | Companion app GPS trackers (Settings -> People) |
+| `input_boolean.julie_home` | Manual switch, because Julie has no tracked device |
+| `input_boolean.guest_mode` | Manual switch for visitors or a babysitter |
+| `binary_sensor.home_occupied` | Template in `configuration.yaml`: on if `zone.home > 0`, Julie is home, or guest mode is on. Off only after 10 min empty. Attribute `people_home` lists who is home. |
+
+Use `binary_sensor.home_occupied` for away and occupied automations, not the
+individual people.
+
+Phone setup for reliable tracking (companion app):
+- Location permission *Allow all the time*.
+- Battery optimisation off.
+- Background location and Location zone sensors enabled.
+- *Home network Wi-Fi SSID* set.
+
+Keep the Home zone radius at about 100 m (Settings -> Areas, labels & zones).
+A smaller radius than phone GPS accuracy causes false "away" results.
+
 #### Dashboards
 
 The **Home** dashboard (`/dashboard-home`) is YAML-mode and versioned in
@@ -373,7 +394,7 @@ scp hs1/srv/homeassistant/config/dashboards/home.yaml martin@192.168.1.2:/tmp/
 ssh martin@192.168.1.2 'sudo install -m 644 /tmp/home.yaml /srv/homeassistant/config/dashboards/ && rm /tmp/home.yaml'
 ```
 
-Layout: summary sections on the main view; per-floor heating, energy and
+Layout: People row at the top (person buttons, House occupied, Guests); summary sections on the main view; per-floor heating, energy and
 appliance detail and the weather forecast are Bubble pop-ups (`#ground`,
 `#first`, `#energy`, `#appliances`, `#weather`) opened from the bottom bar.
 Weather is the built-in Met.no integration (`weather.forecast_home`). Avoid YAML anchors/merge keys in
