@@ -1,0 +1,470 @@
+# Home dashboard (Bubble Card) - YAML mode, edit here and deploy; changes apply
+# on browser refresh (no HA restart). Registered in configuration.yaml.
+# Requires the Bubble Card frontend resource (installed via HACS).
+#
+# Layout: main view with summary cards; floor/energy/appliance detail lives in
+# pop-ups opened from the bottom navigation bar (horizontal-buttons-stack,
+# which Bubble Card requires to be the last card in the view).
+title: Home
+views:
+  - title: Home
+    path: home
+    icon: mdi:home
+    type: sections
+    max_columns: 3
+    sections:
+      # ---------------------------------------------------------------- Front door
+      - type: grid
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Front door
+            icon: mdi:door
+          - type: custom:bubble-card
+            card_type: button
+            button_type: state
+            entity: lock.front_door
+            name: Nuki lock
+            # more-info rather than toggle: lock/unlock is a deliberate action
+            tap_action:
+              action: more-info
+            sub_button:
+              - entity: binary_sensor.front_door_door_sensor
+                name: Door
+                show_name: true
+                state_content: state
+              - entity: sensor.front_door_last_activity
+                name: Last ring
+                icon: mdi:doorbell
+                state_content: state
+                state_background: false
+          - type: custom:bubble-card
+            card_type: button
+            button_type: switch
+            entity: switch.front_door_motion_detection
+            name: Ring motion detection
+            icon: mdi:motion-sensor
+
+      # ---------------------------------------------------------------- Hot water + main heating
+      - type: grid
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Heating & hot water
+            icon: mdi:radiator
+          - type: custom:bubble-card
+            card_type: climate
+            entity: water_heater.downstairs
+            name: Hot water
+            icon: mdi:water-boiler
+            sub_button:
+              - entity: script.hot_water_boost_1h
+                name: Boost 1h
+                icon: mdi:water-boiler
+                show_name: true
+                tap_action:
+                  action: toggle
+              - entity: script.hot_water_boost_cancel
+                name: Cancel
+                icon: mdi:water-boiler-off
+                show_name: true
+                tap_action:
+                  action: toggle
+                visibility:
+                  - condition: state
+                    entity: binary_sensor.downstairs_hotwater_boost
+                    state: "on"
+          - type: custom:bubble-card
+            card_type: climate
+            entity: climate.downstairs
+            name: Downstairs
+            state_content: current_temperature
+          - type: custom:bubble-card
+            card_type: climate
+            entity: climate.upstairs
+            name: Upstairs
+            state_content: current_temperature
+          - type: custom:bubble-card
+            card_type: button
+            button_type: name
+            name: All rooms - ground floor
+            icon: mdi:home-floor-0
+            grid_options:
+              columns: 6
+            button_action:
+              tap_action:
+                action: navigate
+                navigation_path: "#ground"
+            tap_action:
+              action: navigate
+              navigation_path: "#ground"
+          - type: custom:bubble-card
+            card_type: button
+            button_type: name
+            name: All rooms - first floor
+            icon: mdi:home-floor-1
+            grid_options:
+              columns: 6
+            button_action:
+              tap_action:
+                action: navigate
+                navigation_path: "#first"
+            tap_action:
+              action: navigate
+              navigation_path: "#first"
+
+      # ---------------------------------------------------------------- Energy + appliances
+      - type: grid
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Energy
+            icon: mdi:lightning-bolt
+          - type: custom:bubble-card
+            card_type: button
+            button_type: state
+            entity: sensor.octopus_energy_electricity_25j0305697_2600000783982_current_demand
+            name: Electricity now
+            icon: mdi:flash
+            tap_action:
+              action: navigate
+              navigation_path: "#energy"
+            sub_button:
+              - entity: sensor.octopus_energy_electricity_25j0305697_2600000783982_current_accumulative_consumption
+                name: Today
+                icon: mdi:counter
+                state_content: state
+                state_background: false
+              - entity: sensor.octopus_energy_electricity_25j0305697_2600000783982_current_accumulative_cost
+                name: Cost
+                icon: mdi:currency-gbp
+                state_content: state
+                state_background: false
+          - type: custom:bubble-card
+            card_type: button
+            button_type: state
+            entity: sensor.octopus_energy_gas_e6e20398702543_7705986902_current_accumulative_consumption_m3
+            name: Gas today
+            icon: mdi:fire
+            tap_action:
+              action: navigate
+              navigation_path: "#energy"
+            sub_button:
+              - entity: sensor.octopus_energy_gas_e6e20398702543_7705986902_current_accumulative_cost
+                name: Cost
+                icon: mdi:currency-gbp
+                state_content: state
+                state_background: false
+
+          - type: custom:bubble-card
+            card_type: separator
+            name: Appliances
+            icon: mdi:washing-machine
+          - type: custom:bubble-card
+            card_type: button
+            button_type: state
+            entity: sensor.kitchen_dishwasher_operation_state
+            name: Dishwasher
+            icon: mdi:dishwasher
+            tap_action:
+              action: navigate
+              navigation_path: "#appliances"
+            sub_button:
+              - entity: sensor.dishwasher_programme_progress
+                icon: mdi:progress-clock
+                state_content: state
+                state_background: false
+                visibility:
+                  - condition: state
+                    entity: sensor.kitchen_dishwasher_operation_state
+                    state: run
+          - type: custom:bubble-card
+            card_type: button
+            button_type: state
+            entity: sensor.dryer_current_status
+            name: Dryer
+            icon: mdi:tumble-dryer
+            tap_action:
+              action: navigate
+              navigation_path: "#appliances"
+            sub_button:
+              - entity: sensor.dryer_remaining_time
+                icon: mdi:timer-outline
+                state_content: state
+                state_background: false
+                visibility:
+                  - condition: state
+                    entity: sensor.dryer_current_status
+                    state_not: power_off
+
+      # ---------------------------------------------------------------- Calendar + media
+      - type: grid
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Coming up
+            icon: mdi:calendar
+          - type: custom:bubble-card
+            card_type: calendar
+            days: 7
+            limit: 6
+            entities:
+              - entity: calendar.martin_campbellsoftware_co_uk
+              - entity: calendar.katiecampbell0211_gmail_com
+              - entity: calendar.birthdays
+              - entity: calendar.holidays_in_united_kingdom
+          - type: custom:bubble-card
+            card_type: separator
+            name: TV
+            icon: mdi:television
+          - type: custom:bubble-card
+            card_type: media-player
+            entity: media_player.now_tv_32557l050179
+            name: Master bedroom
+          - type: custom:bubble-card
+            card_type: media-player
+            entity: media_player.play_room_tv
+            name: Playroom
+            visibility:
+              - condition: state
+                entity: media_player.play_room_tv
+                state_not: unavailable
+
+      # ---------------------------------------------------------------- Pop-ups + navigation
+      # Pop-ups are hidden until their #hash is opened.
+      - type: grid
+        cards:
+          - type: custom:bubble-card
+            card_type: pop-up
+            hash: "#ground"
+            name: Ground floor
+            icon: mdi:home-floor-0
+            cards:
+              - type: custom:bubble-card
+                card_type: climate
+                entity: climate.downstairs
+                name: Downstairs (hall)
+                state_content: current_temperature
+              - type: custom:bubble-card
+                card_type: climate
+                entity: climate.lounge
+                name: Lounge
+                state_content: current_temperature
+              - type: custom:bubble-card
+                card_type: climate
+                entity: climate.kitchen_1
+                name: Kitchen 1
+                state_content: current_temperature
+              - type: custom:bubble-card
+                card_type: climate
+                entity: climate.kitchen_2
+                name: Kitchen 2
+                state_content: current_temperature
+              - type: custom:bubble-card
+                card_type: climate
+                entity: climate.playroom
+                name: Playroom
+                state_content: current_temperature
+              - type: custom:bubble-card
+                card_type: climate
+                entity: climate.utility
+                name: Utility
+                state_content: current_temperature
+              - type: custom:bubble-card
+                card_type: climate
+                entity: climate.w_c_downstairs
+                name: Downstairs WC
+                state_content: current_temperature
+
+          - type: custom:bubble-card
+            card_type: pop-up
+            hash: "#first"
+            name: First floor
+            icon: mdi:home-floor-1
+            cards:
+              - type: custom:bubble-card
+                card_type: climate
+                entity: climate.upstairs
+                name: Upstairs (landing)
+                state_content: current_temperature
+              - type: custom:bubble-card
+                card_type: climate
+                entity: climate.master_bedroom
+                name: Master bedroom
+                state_content: current_temperature
+              - type: custom:bubble-card
+                card_type: climate
+                entity: climate.master_ensuite
+                name: Ensuite
+                state_content: current_temperature
+              - type: custom:bubble-card
+                card_type: climate
+                entity: climate.ethan_bedroom
+                name: "Ethan's bedroom"
+                state_content: current_temperature
+              - type: custom:bubble-card
+                card_type: climate
+                entity: climate.julie_bedroom
+                name: "Julie's bedroom"
+                state_content: current_temperature
+              - type: custom:bubble-card
+                card_type: climate
+                entity: climate.office
+                name: Office
+                state_content: current_temperature
+              - type: custom:bubble-card
+                card_type: climate
+                entity: climate.bathroom
+                name: Bathroom
+                state_content: current_temperature
+
+          - type: custom:bubble-card
+            card_type: pop-up
+            hash: "#energy"
+            name: Energy
+            icon: mdi:lightning-bolt
+            cards:
+              - type: custom:bubble-card
+                card_type: separator
+                name: Electricity
+                icon: mdi:flash
+              - type: custom:bubble-card
+                card_type: button
+                button_type: state
+                entity: sensor.octopus_energy_electricity_25j0305697_2600000783982_current_demand
+                name: Demand now
+                sub_button:
+                  - entity: sensor.octopus_energy_electricity_25j0305697_2600000783982_current_rate
+                    name: Rate
+                    icon: mdi:cash
+                    state_content: state
+                    state_background: false
+              - type: custom:bubble-card
+                card_type: button
+                button_type: state
+                entity: sensor.octopus_energy_electricity_25j0305697_2600000783982_current_accumulative_consumption
+                name: Today
+                sub_button:
+                  - entity: sensor.octopus_energy_electricity_25j0305697_2600000783982_current_accumulative_cost
+                    icon: mdi:currency-gbp
+                    state_content: state
+                    state_background: false
+              - type: custom:bubble-card
+                card_type: button
+                button_type: state
+                entity: sensor.octopus_energy_electricity_25j0305697_2600000783982_previous_accumulative_consumption
+                name: Yesterday
+                icon: mdi:history
+                sub_button:
+                  - entity: sensor.octopus_energy_electricity_25j0305697_2600000783982_previous_accumulative_cost
+                    icon: mdi:currency-gbp
+                    state_content: state
+                    state_background: false
+              - type: custom:bubble-card
+                card_type: separator
+                name: Gas
+                icon: mdi:fire
+              - type: custom:bubble-card
+                card_type: button
+                button_type: state
+                entity: sensor.octopus_energy_gas_e6e20398702543_7705986902_current_accumulative_consumption_kwh
+                name: Today
+                sub_button:
+                  - entity: sensor.octopus_energy_gas_e6e20398702543_7705986902_current_accumulative_cost
+                    icon: mdi:currency-gbp
+                    state_content: state
+                    state_background: false
+              - type: custom:bubble-card
+                card_type: button
+                button_type: state
+                entity: sensor.octopus_energy_gas_e6e20398702543_7705986902_previous_accumulative_consumption_kwh
+                name: Yesterday
+                icon: mdi:history
+                sub_button:
+                  - entity: sensor.octopus_energy_gas_e6e20398702543_7705986902_previous_accumulative_cost
+                    icon: mdi:currency-gbp
+                    state_content: state
+                    state_background: false
+              - type: custom:bubble-card
+                card_type: button
+                button_type: state
+                entity: sensor.octopus_energy_a_ee857321_octoplus_points
+                name: Octoplus points
+                icon: mdi:star-circle
+              - type: custom:bubble-card
+                card_type: button
+                button_type: name
+                name: Open energy dashboard
+                icon: mdi:chart-bar
+                button_action:
+                  tap_action:
+                    action: navigate
+                    navigation_path: /energy
+                tap_action:
+                  action: navigate
+                  navigation_path: /energy
+
+          - type: custom:bubble-card
+            card_type: pop-up
+            hash: "#appliances"
+            name: Appliances
+            icon: mdi:washing-machine
+            cards:
+              - type: custom:bubble-card
+                card_type: separator
+                name: Dishwasher
+                icon: mdi:dishwasher
+              - type: custom:bubble-card
+                card_type: button
+                button_type: state
+                entity: sensor.kitchen_dishwasher_operation_state
+                name: Status
+                sub_button:
+                  - entity: sensor.kitchen_dishwasher_door
+                    name: Door
+                    show_name: true
+                    state_content: state
+                    state_background: false
+              - type: custom:bubble-card
+                card_type: select
+                entity: select.kitchen_dishwasher_selected_programme
+                name: Programme
+                icon: mdi:format-list-bulleted
+              - type: custom:bubble-card
+                card_type: button
+                button_type: state
+                entity: sensor.dishwasher_programme_finish_time
+                name: Finishes
+                icon: mdi:clock-end
+              - type: custom:bubble-card
+                card_type: separator
+                name: Dryer
+                icon: mdi:tumble-dryer
+              - type: custom:bubble-card
+                card_type: button
+                button_type: state
+                entity: sensor.dryer_current_status
+                name: Status
+                sub_button:
+                  - entity: sensor.dryer_remaining_time
+                    name: Remaining
+                    show_name: true
+                    state_content: state
+                    state_background: false
+
+          # Must be the last card in the view.
+          - type: custom:bubble-card
+            card_type: horizontal-buttons-stack
+            auto_order: false
+            1_link: "#ground"
+            1_name: Ground
+            1_icon: mdi:home-floor-0
+            2_link: "#first"
+            2_name: First
+            2_icon: mdi:home-floor-1
+            3_link: "#energy"
+            3_name: Energy
+            3_icon: mdi:lightning-bolt
+            4_link: "#appliances"
+            4_name: Appliances
+            4_icon: mdi:washing-machine

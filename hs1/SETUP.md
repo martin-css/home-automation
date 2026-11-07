@@ -267,6 +267,7 @@ via the `get.hacs.xyz` script. Custom integrations live in
 |--------------------|---------|---------------|---------|
 | `hacs`             | 2.0.5   | release zip   | Community store |
 | `octopus_energy`   | via HACS | HACS         | Octopus electricity + gas, tariffs, Home Mini |
+| Bubble Card (frontend) | 3.4.3 | HACS      | Cards used by the Home dashboard (`config/www/community/`, resource registered by HACS) |
 
 Install HACS (`unzip` isn't on hs1, so Python extracts it):
 
@@ -283,6 +284,29 @@ cd /srv/homeassistant && sudo docker compose restart
 Then in HA: *Settings → Devices & services → Add integration → HACS*, accept
 the notices and authorise with GitHub (device code). Update HACS itself and
 its integrations from the HACS page; HA shows them as updates.
+
+#### Dashboards
+
+The **Home** dashboard (`/dashboard-home`) is YAML-mode and versioned in
+`config/dashboards/home.yaml`, registered under `lovelace:` in
+`configuration.yaml`. It needs Bubble Card (install via HACS first, or the cards
+show as errors). Edit the file, copy it to hs1 and refresh the browser; only
+adding or removing a dashboard in `configuration.yaml` needs a restart.
+
+```bash
+scp hs1/srv/homeassistant/config/dashboards/home.yaml martin@192.168.1.2:/tmp/
+ssh martin@192.168.1.2 'sudo install -m 644 /tmp/home.yaml /srv/homeassistant/config/dashboards/ && rm /tmp/home.yaml'
+```
+
+Layout: summary sections on the main view; per-floor heating, energy and
+appliance detail are Bubble pop-ups (`#ground`, `#first`, `#energy`,
+`#appliances`) opened from the bottom bar. Avoid YAML anchors/merge keys in
+dashboards: HA logs a duplicate-key warning for every override. The Ring camera
+is deliberately not on the dashboard, because live view creates Ring events.
+
+Set it as the default (Settings -> Dashboards -> Home -> *Set as default*);
+the auto-generated Overview stays as a fallback. The Map and Martin dashboards
+are storage-mode (UI-edited, not in git).
 
 #### Octopus Energy
 

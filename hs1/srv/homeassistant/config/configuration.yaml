@@ -3,3 +3,14 @@ default_config:
 
 # Scripts (also editable in the UI: Settings -> Automations & scenes -> Scripts)
 script: !include scripts.yaml
+
+# Dashboards defined in YAML (versioned in git). Edit the file, refresh the
+# browser. Adding/removing a dashboard here needs a restart.
+lovelace:
+  dashboards:
+    dashboard-home:
+      mode: yaml
+      title: Home
+      icon: mdi:home-variant
+      show_in_sidebar: true
+      filename: dashboards/home.yaml
