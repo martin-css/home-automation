@@ -4,3 +4,6 @@ ufw allow from 192.168.1.0/24 to 192.168.1.2 port 80 proto tcp comment 'Caddy HT
 ufw allow from 192.168.1.0/24 to 192.168.1.2 port 443 proto tcp comment 'Caddy HTTPS LAN only'
 ufw allow from 192.168.1.0/24 to 192.168.1.2 port 443 proto udp comment 'Caddy HTTP3 LAN only'
 ufw allow in on br-8b5fa0e1c1e7 from 172.18.0.2 to 192.168.1.2 port 8123 proto tcp comment 'Home Assistant from Caddy only'
+ufw allow 51820/udp comment 'WireGuard'
+ufw allow in on wg0 from 10.20.0.0/24 to 192.168.1.2 port 443 proto tcp comment 'Caddy HTTPS from VPN'
+ufw allow in on wg0 from 10.20.0.0/24 to 192.168.1.2 port 443 proto udp comment 'Caddy HTTP3 from VPN'

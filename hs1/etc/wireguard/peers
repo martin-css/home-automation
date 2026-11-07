@@ -1,0 +1,4 @@
+# NAME IP  (source of truth for wg-hs1; keys live in /etc/wireguard/clients)
+martin-phone 10.20.0.2
+katie-phone 10.20.0.3
+ethan-phone 10.20.0.4

@@ -1,0 +1,43 @@
+#!/bin/bash
+# Keep a DigitalOcean A record pointed at this network's public IPv4 address.
+# Config: /etc/ddns-vpn.env (DO_TOKEN, DO_DOMAIN, DO_RECORD, DO_TTL)
+set -euo pipefail
+
+set -a; . /etc/ddns-vpn.env; set +a
+: "${DO_TOKEN:?}" "${DO_DOMAIN:?}" "${DO_RECORD:?}"
+DO_TTL=${DO_TTL:-60}
+API="https://api.digitalocean.com/v2/domains/${DO_DOMAIN}/records"
+FQDN="${DO_RECORD}.${DO_DOMAIN}"
+
+valid_ip() { [[ $1 =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; }
+
+ip=""
+for src in https://api.ipify.org https://ipv4.icanhazip.com https://ifconfig.me/ip; do
+  ip=$(curl -4 -fsS --max-time 10 "$src" | tr -d '[:space:]') || true
+  valid_ip "$ip" && break
+  ip=""
+done
+[ -n "$ip" ] || { echo "could not determine public IP" >&2; exit 1; }
+
+do_api() { curl -fsS --max-time 20 -H "Authorization: Bearer ${DO_TOKEN}" \
+             -H "Content-Type: application/json" "$@"; }
+
+record=$(do_api "${API}?type=A&name=${FQDN}" | jq -c '.domain_records[0] // empty')
+
+if [ -z "$record" ]; then
+  do_api -X POST "$API" \
+    -d "$(jq -nc --arg n "$DO_RECORD" --arg ip "$ip" --argjson t "$DO_TTL" \
+          '{type:"A",name:$n,data:$ip,ttl:$t}')" >/dev/null
+  echo "created ${FQDN} -> ${ip}"
+  exit 0
+fi
+
+id=$(jq -r .id <<<"$record")
+current=$(jq -r .data <<<"$record")
+if [ "$current" = "$ip" ]; then
+  echo "${FQDN} already ${ip}"
+else
+  do_api -X PATCH "${API}/${id}" \
+    -d "$(jq -nc --arg ip "$ip" --argjson t "$DO_TTL" '{data:$ip,ttl:$t}')" >/dev/null
+  echo "updated ${FQDN}: ${current} -> ${ip}"
+fi

@@ -1,0 +1,10 @@
+[Unit]
+Description=Update vpn.home DNS record every 5 minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+Unit=ddns-vpn.service
+
+[Install]
+WantedBy=timers.target

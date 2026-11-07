@@ -10,6 +10,7 @@ plus the steps to rebuild it from a clean install.
 | LAN         | `enp2s0`, static `192.168.1.2/24`, gateway `192.168.1.1`  |
 | DNS/DHCP    | Router (`192.168.1.1`); server uses static `/etc/resolv.conf` |
 | Docker      | Docker CE 29.x + Compose plugin v5 (Docker apt repo)      |
+| VPN         | WireGuard `wg0` on hs1, UDP 51820 forwarded by router, `10.20.0.0/24`, endpoint `vpn.home.campbellsoftware.co.uk` |
 | Domain      | `*.home.campbellsoftware.co.uk`, public DNS at DigitalOcean (also used for ACME DNS-01) |
 | Backups     | Restic → S3 (`eu-west-2`), daily 03:00 via systemd timer  |
 
@@ -22,14 +23,19 @@ hs1/
 ├── etc/
 │   ├── apt/apt.conf.d/20auto-upgrades        unattended security upgrades
 │   ├── apt/sources.list.d/docker.list
+│   ├── ddns-vpn.env.example                  → /etc/ddns-vpn.env (DO token!)
 │   ├── hosts
 │   ├── network/interfaces                    static IP (ifupdown)
 │   ├── resolv.conf                           static DNS resolvers
 │   ├── restic/hs1.env.example                → /etc/restic/hs1.env (secrets!)
 │   ├── restic/hs1.files                      paths included in backup
 │   ├── ssh/sshd_config                       key-only auth
-│   └── systemd/system/restic-hs1-backup.{service,timer}
+│   ├── systemd/system/restic-hs1-backup.{service,timer}
+│   ├── systemd/system/ddns-vpn.{service,timer}  public IP → vpn.home A record
+│   └── wireguard/peers                       VPN peers: name + tunnel IP
 ├── usr/local/sbin/restic-hs1                 restic wrapper that loads env
+├── usr/local/sbin/wg-hs1                     builds wg0.conf + phone configs/QR codes
+├── usr/local/sbin/ddns-vpn                   DigitalOcean dynamic DNS updater
 ├── srv/                                      one Docker Compose project per dir
 │   ├── caddy/          TLS reverse proxy, custom build with DigitalOcean DNS plugin
 │   ├── homeassistant/  Home Assistant (host network)
@@ -50,6 +56,8 @@ These live only on the server and in the Restic backup. Recreate or restore them
 | `/srv/homeassistant/config/.storage`           | **All UI config**: integrations, devices, entities, users, `http` settings (trusted proxy) |
 | `/srv/homeassistant/config/home-assistant_v2.db` | Recorder history                     |
 | `/srv/homeassistant/backup-key.txt`            | HA backup encryption key               |
+| `/etc/wireguard/server.key`, `clients/*.key`, `wg0.conf`, `clients/*.conf` | WireGuard private keys and generated configs |
+| `/etc/ddns-vpn.env`                            | DigitalOcean token for the dynamic DNS updater |
 | `/etc/restic/hs1.env`, `/etc/restic/hs1.password` | AWS keys + Restic repo password — **keep a copy off-server (password manager)** |
 
 > Home Assistant is almost entirely UI-configured (`configuration.yaml` is just
@@ -173,9 +181,10 @@ sudo docker compose up -d
 Routes (see `Caddyfile`): `ha.` → `192.168.1.2:8123`, `test.` → static
 response, anything else aborted. Binds only `192.168.1.2:80/443`.
 
-LAN clients reach these names through **public DNS** (DigitalOcean), since the
-router does the LAN DNS. `ha.home.campbellsoftware.co.uk` (and any other routes)
-needs an A record pointing to `192.168.1.2`. If the router blocks private IPs in
+LAN clients reach these names through **public DNS** (DigitalOcean zone
+`home.campbellsoftware.co.uk`), since the router does the LAN DNS.
+`ha.home.campbellsoftware.co.uk` (and any other routes) needs an A record
+pointing to `192.168.1.2` – this same name/IP is used over the VPN. If the router blocks private IPs in
 public DNS answers (DNS-rebind protection), allow this domain there.
 
 ### Mosquitto
@@ -233,6 +242,9 @@ sudo ufw allow from 192.168.1.0/24 to 192.168.1.2 port 80 proto tcp comment 'Cad
 sudo ufw allow from 192.168.1.0/24 to 192.168.1.2 port 443 proto tcp comment 'Caddy HTTPS LAN only'
 sudo ufw allow from 192.168.1.0/24 to 192.168.1.2 port 443 proto udp comment 'Caddy HTTP3 LAN only'
 sudo ufw allow in on $BR from $CADDY_IP to 192.168.1.2 port 8123 proto tcp comment 'Home Assistant from Caddy only'
+sudo ufw allow 51820/udp comment 'WireGuard'
+sudo ufw allow in on wg0 from 10.20.0.0/24 to 192.168.1.2 port 443 proto tcp comment 'Caddy HTTPS from VPN'
+sudo ufw allow in on wg0 from 10.20.0.0/24 to 192.168.1.2 port 443 proto udp comment 'Caddy HTTP3 from VPN'
 sudo ufw enable
 ```
 
@@ -242,7 +254,107 @@ If the Caddy bridge or IP differs from before, also update Home Assistant's
 > Note: Docker-published ports (Caddy 80/443) are inserted by Docker's own
 > iptables rules and bypass ufw; they are limited by binding to `192.168.1.2`.
 
-## 9. Backups (Restic → S3)
+## 9. WireGuard VPN (remote access)
+
+Phones connect to `vpn.home.campbellsoftware.co.uk:51820/udp`, which the router
+forwards to hs1. It is a **split tunnel**: the phones send only `192.168.1.2`
+(Caddy → Home Assistant) and `10.20.0.1` (hs1) through it; everything else goes
+straight to the internet. Because `ha.home` resolves to `192.168.1.2` in public
+DNS, the same URL works at home and away.
+
+```
+Phone ──UDP 51820──> Router (port forward) ──> hs1 wg0 10.20.0.1
+   https://ha.home.campbellsoftware.co.uk → 192.168.1.2:443 (Caddy) → HA :8123
+```
+
+| Peer          | Tunnel IP   |
+|---------------|-------------|
+| hs1 (server)  | 10.20.0.1   |
+| martin-phone  | 10.20.0.2   |
+| katie-phone   | 10.20.0.3   |
+| ethan-phone   | 10.20.0.4   |
+
+### Router
+
+Forward **UDP 51820** (WAN) → `192.168.1.2:51820`. Requires a real public IPv4
+on the router's WAN (no CGNAT).
+
+### Dynamic DNS for `vpn.home`
+
+```bash
+sudo apt install -y jq
+sudo install -m 755 usr/local/sbin/ddns-vpn /usr/local/sbin/
+sudo install -m 600 etc/ddns-vpn.env.example /etc/ddns-vpn.env && sudoedit /etc/ddns-vpn.env
+sudo cp etc/systemd/system/ddns-vpn.{service,timer} /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now ddns-vpn.timer          # every 5 min, TTL 60s
+sudo systemctl start ddns-vpn.service && journalctl -u ddns-vpn.service -n 5
+```
+
+Use a DigitalOcean token with a **custom scope of `domain:read` + `domain:update`**.
+
+### WireGuard server
+
+```bash
+sudo apt install -y wireguard-tools qrencode
+sudo install -m 755 usr/local/sbin/wg-hs1 /usr/local/sbin/
+sudo install -d -m 700 /etc/wireguard
+sudo install -m 600 etc/wireguard/peers /etc/wireguard/peers
+```
+
+```bash
+sudo wg-hs1 render     # creates any missing keys, writes wg0.conf + clients/*.conf
+```
+
+With `/etc/wireguard` restored from Restic the existing keys are reused and
+the phones keep working. Without it, new keys are generated and every phone
+must re-scan its QR code.
+
+```bash
+sudo systemctl enable --now wg-quick@wg0
+sudo wg show
+```
+
+`wg-hs1` writes `/etc/wireguard/wg0.conf` and `clients/<name>.conf` from
+`peers` + keys, and applies changes live with `wg syncconf`. Don't edit
+`wg0.conf` by hand.
+
+### Phones (Android)
+
+1. Install **WireGuard** (by WireGuard Development Team) from the Play Store.
+2. On hs1, show the phone's QR code: `sudo wg-hs1 qr martin-phone`
+3. In the app: **+ → Scan from QR code**, name it `home`, turn it on.
+4. HA companion app: set both internal and external URL to
+   `https://ha.home.campbellsoftware.co.uk`.
+
+Turn the tunnel off on home Wi-Fi unless the router supports NAT loopback
+(hairpin): the tunnel endpoint is the house's public IP. The third-party
+*WG Tunnel* app can toggle automatically by SSID.
+
+### Add / remove a device
+
+```bash
+sudo wg-hs1 add laptop-name          # next free IP, applied live
+sudo wg-hs1 qr laptop-name
+# remove: delete its line from /etc/wireguard/peers, then
+sudo wg-hs1 render && sudo rm /etc/wireguard/clients/<name>.*
+```
+
+Update `etc/wireguard/peers` and the table above in this repo to match.
+
+### Later: access to the rest of the LAN
+
+hs1 already has IP forwarding (Docker enables it) and a NAT rule for
+`10.20.0.0/24` out of `enp2s0` (in `wg0.conf` `PostUp`). Routed traffic is
+blocked by ufw. To open it up:
+
+1. `sudo ufw route allow in on wg0 out on enp2s0 from 10.20.0.0/24 to 192.168.1.0/24 comment 'VPN to LAN'`
+2. In `/usr/local/sbin/wg-hs1` set `CLIENT_ALLOWED_IPS="192.168.1.0/24, 10.20.0.1/32"`
+   (and in this repo), run `sudo wg-hs1 render`, re-import the QR codes on the phones.
+
+Narrow the ufw rule to specific hosts/ports if only some devices should be reachable.
+
+## 10. Backups (Restic → S3)
 
 If not already done in §6, set up `/etc/restic/` and the wrapper as shown there.
 For a brand-new repository: `sudo restic-hs1 init`.
@@ -256,10 +368,10 @@ journalctl -u restic-hs1-backup.service -n 50
 sudo restic-hs1 snapshots
 ```
 
-Backs up `/srv`, `/etc/{ssh,ufw,systemd,docker,restic}`; retention 7 daily /
+Backs up `/srv`, `/etc/{ssh,ufw,systemd,docker,restic,wireguard}`, `/etc/ddns-vpn.env`; retention 7 daily /
 4 weekly / 12 monthly / 3 yearly, S3 Intelligent-Tiering.
 
-## 10. Verify
+## 11. Verify
 
 ```bash
 docker ps                                            # caddy, homeassistant, mosquitto
@@ -267,7 +379,9 @@ sudo ss -lntup | grep -E ':(80|443|1883|8123)\b'
 curl -sS https://test.home.campbellsoftware.co.uk    # "Caddy on hs1 is working"
 curl -sSI https://ha.home.campbellsoftware.co.uk | head -1
 sudo ufw status verbose
-systemctl list-timers restic-hs1-backup.timer
+sudo wg show                                         # latest handshake per phone
+dig +short vpn.home.campbellsoftware.co.uk           # = curl -4 ifconfig.me
+systemctl list-timers restic-hs1-backup.timer ddns-vpn.timer
 ```
 
 ## Updating this snapshot

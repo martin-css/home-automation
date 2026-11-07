@@ -4,3 +4,5 @@
 /etc/systemd
 /etc/docker
 /etc/restic
+/etc/wireguard
+/etc/ddns-vpn.env

@@ -9,3 +9,7 @@
 **/homeassistant/config/.storage/
 **/homeassistant/config/*.db*
 **/homeassistant/config/*.log*
+**/etc/ddns-vpn.env
+**/etc/wireguard/*.key
+**/etc/wireguard/wg0.conf
+**/etc/wireguard/clients/
