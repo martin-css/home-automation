@@ -51,7 +51,7 @@ These live only on the server and in the Restic backup. Recreate or restore them
 |------------------------------------------------|----------------------------------------|
 | `/srv/caddy/.env`                              | `DO_AUTH_TOKEN` (DigitalOcean API token, DNS write) |
 | `/srv/caddy/data`, `/srv/caddy/config`         | ACME account + issued certificates     |
-| `/srv/mosquitto/config/passwd`                 | MQTT users `homeassistant`, `mqtt-admin` |
+| `/srv/mosquitto/config/passwd`                 | MQTT users `homeassistant`, `mqtt-admin`, `nuki` |
 | `/srv/mosquitto/data`                          | Retained messages / persistence        |
 | `/srv/homeassistant/config/.storage`           | **All UI config**: integrations, devices, entities, users, `http` settings (trusted proxy) |
 | `/srv/homeassistant/config/home-assistant_v2.db` | Recorder history                     |
@@ -208,16 +208,30 @@ Check: `dig @192.168.1.1 ha.home.campbellsoftware.co.uk +short` is empty;
 ```bash
 cd /srv/mosquitto
 sudo chown root:1883 config && sudo chmod 750 config
-sudo chown root:1883 config/mosquitto.conf && sudo chmod 640 config/mosquitto.conf
+sudo chown root:1883 config/mosquitto.conf config/acl && sudo chmod 640 config/mosquitto.conf config/acl
 sudo install -d -o 1883 -g 1883 -m 750 data
 # create users (skip if passwd was restored); -c only for the first one
 sudo docker run --rm -it -v "$PWD/config:/mosquitto/config" eclipse-mosquitto:2.1.2-alpine \
   mosquitto_passwd -c /mosquitto/config/passwd homeassistant
 sudo docker run --rm -it -v "$PWD/config:/mosquitto/config" eclipse-mosquitto:2.1.2-alpine \
   mosquitto_passwd /mosquitto/config/passwd mqtt-admin
+sudo docker run --rm -it -v "$PWD/config:/mosquitto/config" eclipse-mosquitto:2.1.2-alpine \
+  mosquitto_passwd /mosquitto/config/passwd nuki
 sudo chown 1883:1883 config/passwd && sudo chmod 600 config/passwd
 sudo docker compose up -d
 ```
+
+**One MQTT user per device.** `config/acl` limits each user to its own topics
+(anything not listed is denied); `homeassistant` and `mqtt-admin` get `#`.
+To add a device: add a user as above, add a `user <name>` block to `config/acl`
+(normally `readwrite <device>/#` and `write homeassistant/#` for discovery),
+then `sudo docker compose restart mosquitto`.
+
+| User            | Used by                 | Topics                                   |
+|-----------------|-------------------------|------------------------------------------|
+| `homeassistant` | HA MQTT integration     | all                                      |
+| `mqtt-admin`    | manual debugging        | all                                      |
+| `nuki`          | Nuki smart lock (Wi-Fi) | `nuki/#` rw, `homeassistant/#` write     |
 
 ### Home Assistant
 

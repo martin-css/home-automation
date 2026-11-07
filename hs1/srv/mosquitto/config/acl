@@ -1,0 +1,15 @@
+# Mosquitto topic ACLs (mosquitto_acl_file plugin). Anything not listed is denied.
+# One user per device; give each device only the topics it needs.
+
+# Home Assistant: full access (discovery, state, commands)
+user homeassistant
+topic readwrite #
+
+# Admin / debugging
+user mqtt-admin
+topic readwrite #
+
+# Nuki smart lock: its own topics + Home Assistant discovery
+user nuki
+topic readwrite nuki/#
+topic write homeassistant/#
