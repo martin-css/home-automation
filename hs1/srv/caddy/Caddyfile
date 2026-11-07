@@ -17,11 +17,6 @@
 		reverse_proxy 192.168.1.2:8123
 	}
 
-	@dns host dns.home.campbellsoftware.co.uk
-	handle @dns {
-		reverse_proxy 192.168.1.2:3000
-	}
-
 	@test host test.home.campbellsoftware.co.uk
 	handle @test {
 		respond "Caddy on hs1 is working" 200

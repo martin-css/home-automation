@@ -4,8 +4,3 @@ ufw allow from 192.168.1.0/24 to 192.168.1.2 port 80 proto tcp comment 'Caddy HT
 ufw allow from 192.168.1.0/24 to 192.168.1.2 port 443 proto tcp comment 'Caddy HTTPS LAN only'
 ufw allow from 192.168.1.0/24 to 192.168.1.2 port 443 proto udp comment 'Caddy HTTP3 LAN only'
 ufw allow in on br-8b5fa0e1c1e7 from 172.18.0.2 to 192.168.1.2 port 8123 proto tcp comment 'Home Assistant from Caddy only'
-ufw allow in on enp2s0 from 192.168.1.0/24 to 192.168.1.2 port 53 proto tcp comment 'AdGuard DNS LAN only'
-ufw allow in on enp2s0 from 192.168.1.0/24 to 192.168.1.2 port 53 proto udp comment 'AdGuard DNS LAN only'
-ufw allow in on br-8b5fa0e1c1e7 from 172.18.0.2 to 192.168.1.2 port 3000 proto tcp comment 'AdGuard UI from Caddy only'
-ufw allow in on enp2s0 from 0.0.0.0 port 68 to 255.255.255.255 port 67 proto udp comment 'AdGuard DHCP discovery LAN only'
-ufw allow in on enp2s0 from 192.168.1.0/24 port 68 to 192.168.1.2 port 67 proto udp comment 'AdGuard DHCP renewal LAN only'

@@ -6,7 +6,6 @@
 **/backup-key.txt
 **/caddy/data/
 **/caddy/config/
-**/adguard/work/
 **/homeassistant/config/.storage/
 **/homeassistant/config/*.db*
 **/homeassistant/config/*.log*
