@@ -1,0 +1,12 @@
+hot_water_boost_1h:
+  alias: Hot water boost 1 hour
+  description: Boost the Hive hot water for 1 hour
+  icon: mdi:water-boiler
+  mode: single
+  sequence:
+    - action: hive.boost_hot_water
+      target:
+        entity_id: water_heater.downstairs
+      data:
+        time_period: "01:00:00"
+        on_off: "on"

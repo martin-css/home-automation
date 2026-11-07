@@ -1,2 +1,5 @@
 # Home Assistant configuration
 default_config:
+
+# Scripts (also editable in the UI: Settings -> Automations & scenes -> Scripts)
+script: !include scripts.yaml
