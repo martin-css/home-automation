@@ -292,8 +292,11 @@ its integrations from the HACS page; HA shows them as updates.
 3. *Settings → Dashboards → Energy*: add the electricity and gas consumption
    sensors and the tariff cost entities the integration creates.
 
-The Octopus Home Mini (if working) gives near-live electricity and ~30-min gas
-data via the same integration; without it, data arrives with roughly a day's delay.
+The Octopus Home Mini gives near-live electricity and ~30-min gas data via the
+same integration; without it, data arrives with roughly a day's delay. It talks
+to Octopus over 2.4 GHz Wi-Fi, not to HA directly. If it stops reporting, a hard
+reset and re-pair in the Octopus app fixed it previously (Nov 2026). Reload the
+integration afterwards so the Home Mini entities appear.
 
 All containers use `restart: unless-stopped`, so they return after reboot.
 
