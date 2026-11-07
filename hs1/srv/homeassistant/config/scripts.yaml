@@ -10,3 +10,15 @@ hot_water_boost_1h:
       data:
         time_period: "01:00:00"
         on_off: "on"
+
+hot_water_boost_cancel:
+  alias: Cancel hot water boost
+  description: Cancel any active Hive hot water boost
+  icon: mdi:water-boiler-off
+  mode: single
+  sequence:
+    - action: hive.boost_hot_water
+      target:
+        entity_id: water_heater.downstairs
+      data:
+        on_off: "off"
