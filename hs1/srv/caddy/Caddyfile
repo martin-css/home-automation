@@ -1,0 +1,34 @@
+{
+	email admin@campbellsoftware.co.uk
+	admin localhost:2019
+}
+
+# Add future internal service routes as explicit host matchers in this block.
+*.home.campbellsoftware.co.uk, home.campbellsoftware.co.uk {
+	tls {
+		issuer acme {
+			dir https://acme-v02.api.letsencrypt.org/directory
+			dns digitalocean {env.DO_AUTH_TOKEN}
+		}
+	}
+
+	@ha host ha.home.campbellsoftware.co.uk
+	handle @ha {
+		reverse_proxy 192.168.1.2:8123
+	}
+
+	@dns host dns.home.campbellsoftware.co.uk
+	handle @dns {
+		reverse_proxy 192.168.1.2:3000
+	}
+
+	@test host test.home.campbellsoftware.co.uk
+	handle @test {
+		respond "Caddy on hs1 is working" 200
+	}
+
+	# Unknown internal service names are intentionally not served.
+	handle {
+		abort
+	}
+}

@@ -1,0 +1,26 @@
+services:
+  caddy:
+    build:
+      context: .
+      args:
+        CADDY_VERSION: "2.11.4"
+        CADDY_DNS_DIGITALOCEAN_COMMIT: "04bde2867106aa1b44c2f9da41a285fa02e629c5"
+    image: local/caddy-digitalocean:2.11.4-04bde286
+    container_name: caddy
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "192.168.1.2:80:80/tcp"
+      - "192.168.1.2:443:443/tcp"
+      - "192.168.1.2:443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data:/data
+      - ./config:/config
+    networks:
+      - ingress
+
+networks:
+  ingress:
+    name: caddy_ingress

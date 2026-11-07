@@ -1,0 +1,15 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:2026.8.1
+    container_name: homeassistant
+    restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      TZ: Europe/London
+    volumes:
+      - ./config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro

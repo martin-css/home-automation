@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+set -a
+. /etc/restic/hs1.env
+set +a
+exec /usr/bin/restic -o s3.region=eu-west-2 -o s3.storage-class=INTELLIGENT_TIERING "$@"

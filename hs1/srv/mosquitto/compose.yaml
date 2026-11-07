@@ -1,0 +1,9 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.1.2-alpine
+    container_name: mosquitto
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./config:/mosquitto/config:ro
+      - ./data:/mosquitto/data

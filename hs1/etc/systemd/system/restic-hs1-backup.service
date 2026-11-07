@@ -1,0 +1,15 @@
+[Unit]
+Description=Restic backup of hs1 to S3
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/restic-hs1 backup --files-from /etc/restic/hs1.files --host hs1
+ExecStart=/usr/local/sbin/restic-hs1 forget --host hs1 --keep-daily 7 --keep-weekly 4 --keep-monthly 12 --keep-yearly 3 --prune
+PrivateTmp=true
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+LockPersonality=true

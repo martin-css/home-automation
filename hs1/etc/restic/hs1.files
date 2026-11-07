@@ -1,0 +1,6 @@
+/srv
+/etc/ssh
+/etc/ufw
+/etc/systemd
+/etc/docker
+/etc/restic

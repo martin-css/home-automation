@@ -1,0 +1,12 @@
+# Never commit secrets or runtime state copied from servers
+.env
+*.password
+**/etc/restic/hs1.env
+**/mosquitto/config/passwd
+**/backup-key.txt
+**/caddy/data/
+**/caddy/config/
+**/adguard/work/
+**/homeassistant/config/.storage/
+**/homeassistant/config/*.db*
+**/homeassistant/config/*.log*
