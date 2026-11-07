@@ -112,6 +112,9 @@ ip -br addr show enp2s0              # expect 192.168.1.2/24
 > `resolvconf` is not installed, so `dns-nameservers` in `interfaces` is not
 > applied; `/etc/resolv.conf` is a plain static file (router first, then
 > public resolvers). Make sure nothing else (e.g. `dhcpcd`) overwrites it.
+>
+> Containers copy `/etc/resolv.conf` when they are created. After changing it,
+> recreate them: `cd /srv/<svc> && sudo docker compose up -d --force-recreate`.
 
 The router provides DHCP and DNS for the LAN. Ensure `192.168.1.2` is outside
 its DHCP pool or reserved for hs1.
@@ -228,6 +231,9 @@ Fresh install (no restore): onboard at `http://192.168.1.2:8123`, then in
 
 - `use_x_forwarded_for: true`
 - `trusted_proxies: [<caddy container IP>/32]` (currently `172.18.0.2/32`)
+- *Settings → System → Network*: **Home Assistant URL** – both internal and
+  external = `https://ha.home.campbellsoftware.co.uk` (used for OAuth callbacks,
+  notifications and the companion app).
 
 Then add the MQTT integration with the `homeassistant` user.
 
