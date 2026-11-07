@@ -13,3 +13,4 @@
 **/etc/wireguard/*.key
 **/etc/wireguard/wg0.conf
 **/etc/wireguard/clients/
+**/homeassistant/config/custom_components/

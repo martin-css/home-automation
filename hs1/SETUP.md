@@ -257,6 +257,44 @@ Fresh install (no restore): onboard at `http://192.168.1.2:8123`, then in
 
 Then add the MQTT integration with the `homeassistant` user.
 
+#### HACS and custom integrations
+
+HACS (community store) is installed manually from a pinned GitHub release, not
+via the `get.hacs.xyz` script. Custom integrations live in
+`config/custom_components/` (not in git; backed up by Restic with `/srv`).
+
+| Custom integration | Version | Installed via | Purpose |
+|--------------------|---------|---------------|---------|
+| `hacs`             | 2.0.5   | release zip   | Community store |
+| `octopus_energy`   | via HACS | HACS         | Octopus electricity + gas, tariffs, Home Mini |
+
+Install HACS (`unzip` isn't on hs1, so Python extracts it):
+
+```bash
+D=$(mktemp -d)
+curl -fsSL -o $D/hacs.zip https://github.com/hacs/integration/releases/download/2.0.5/hacs.zip
+sha256sum $D/hacs.zip   # 2.0.5: 97be6b824a4f38e683728cc6dd72367f6b8bad0a43428b1b3b987a3087adf413
+sudo mkdir -p /srv/homeassistant/config/custom_components/hacs
+sudo python3 -I -m zipfile -e $D/hacs.zip /srv/homeassistant/config/custom_components/hacs/
+rm -rf $D
+cd /srv/homeassistant && sudo docker compose restart
+```
+
+Then in HA: *Settings → Devices & services → Add integration → HACS*, accept
+the notices and authorise with GitHub (device code). Update HACS itself and
+its integrations from the HACS page; HA shows them as updates.
+
+#### Octopus Energy
+
+1. HACS → search **Octopus Energy** (BottlecapDave) → Download → restart HA.
+2. *Add integration → Octopus Energy*: account number (`A-XXXXXXXX`) and API key
+   from octopus.energy → Account → Personal details → API access.
+3. *Settings → Dashboards → Energy*: add the electricity and gas consumption
+   sensors and the tariff cost entities the integration creates.
+
+The Octopus Home Mini (if working) gives near-live electricity and ~30-min gas
+data via the same integration; without it, data arrives with roughly a day's delay.
+
 All containers use `restart: unless-stopped`, so they return after reboot.
 
 ## 8. Firewall (ufw)
