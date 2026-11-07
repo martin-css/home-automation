@@ -182,7 +182,9 @@ sudo docker compose up -d
 ```
 
 Routes (see `Caddyfile`): `ha.` → `192.168.1.2:8123`, `test.` → static
-response, anything else aborted. Binds only `192.168.1.2:80/443`.
+response, anything else aborted. Plus a plain-HTTP site on `http://192.168.1.2`
+that serves only the doorbell camera snapshot (for the TV alert, see *Scripts
+and automations*). Binds only `192.168.1.2:80/443`.
 
 LAN clients reach these names through **public DNS** (DigitalOcean zone
 `home.campbellsoftware.co.uk`), since the router does the LAN DNS.
