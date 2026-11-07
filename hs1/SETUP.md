@@ -372,6 +372,12 @@ Notes:
 Use `binary_sensor.home_occupied` for away and occupied automations, not the
 individual people.
 
+Avatars: upload a photo per person under Settings -> People. The dashboard
+buttons use `person.*`, so Bubble shows the photo automatically. Julie's button
+uses `person.julie` for the photo, but its state and tap come from
+`input_boolean.julie_home`. Uploaded photos live in `config/image/`, which is
+not in git but is backed up by restic.
+
 Phone setup for reliable tracking (companion app):
 - Location permission *Allow all the time*.
 - Battery optimisation off.

@@ -53,16 +53,26 @@ views:
             grid_options:
               columns: 6
             styles: *presence_style
+          # Entity is person.julie so her photo shows; presence and the tap come
+          # from input_boolean.julie_home (she has no tracked device).
           - type: custom:bubble-card
             card_type: button
-            button_type: switch
-            entity: input_boolean.julie_home
+            button_type: state
+            entity: person.julie
             name: Julie
-            icon: mdi:account
             state_content: "{{ 'Home' if is_state('input_boolean.julie_home', 'on') else 'Away' }}"
+            tap_action:
+              action: call-service
+              service: input_boolean.toggle
+              target:
+                entity_id: input_boolean.julie_home
             grid_options:
               columns: 6
-            styles: *presence_style
+            styles: |
+              .bubble-icon-container {
+                background: ${hass.states['input_boolean.julie_home'].state === 'on' ? 'var(--green-color)' : 'var(--disabled-color)'} !important;
+                opacity: ${hass.states['input_boolean.julie_home'].state === 'on' ? 1 : 0.5};
+              }
           - type: custom:bubble-card
             card_type: button
             button_type: state
