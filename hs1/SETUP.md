@@ -184,8 +184,21 @@ response, anything else aborted. Binds only `192.168.1.2:80/443`.
 LAN clients reach these names through **public DNS** (DigitalOcean zone
 `home.campbellsoftware.co.uk`), since the router does the LAN DNS.
 `ha.home.campbellsoftware.co.uk` (and any other routes) needs an A record
-pointing to `192.168.1.2` – this same name/IP is used over the VPN. If the router blocks private IPs in
-public DNS answers (DNS-rebind protection), allow this domain there.
+pointing to `192.168.1.2` – this same name/IP is used over the VPN.
+
+**The router's DNS drops answers that point at private IPs** (DNS-rebind
+protection; returns an empty `NOERROR`, no setting to change it). So devices
+using the router for DNS cannot resolve `ha.home`. Work-around per device:
+
+- **Android:** Settings → Network & internet → **Private DNS** → hostname
+  `one.one.one.one` (or `dns.google`). Uses DNS-over-TLS on port 853, bypassing
+  the router, on Wi-Fi and mobile data.
+- **Windows/macOS/Linux:** set the DNS server to `1.1.1.1` / `1.0.0.1` for the
+  home network, or add `192.168.1.2 ha.home.campbellsoftware.co.uk` to the
+  hosts file.
+
+Check: `dig @192.168.1.1 ha.home.campbellsoftware.co.uk +short` is empty;
+`dig +tls @one.one.one.one ha.home.campbellsoftware.co.uk +short` gives `192.168.1.2`.
 
 ### Mosquitto
 
@@ -324,7 +337,9 @@ sudo wg show
 1. Install **WireGuard** (by WireGuard Development Team) from the Play Store.
 2. On hs1, show the phone's QR code: `sudo wg-hs1 qr martin-phone`
 3. In the app: **+ → Scan from QR code**, name it `home`, turn it on.
-4. HA companion app: set both internal and external URL to
+4. Set **Private DNS** to `one.one.one.one` (see the router note in §7) –
+   needed for `ha.home` to resolve on home Wi-Fi.
+5. HA companion app: set both internal and external URL to
    `https://ha.home.campbellsoftware.co.uk`.
 
 Turn the tunnel off on home Wi-Fi unless the router supports NAT loopback
