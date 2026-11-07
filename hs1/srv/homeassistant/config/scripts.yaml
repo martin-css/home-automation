@@ -22,3 +22,74 @@ hot_water_boost_cancel:
         entity_id: water_heater.downstairs
       data:
         on_off: "off"
+
+# Pause the Playroom TV (if on and in an app) and show a PiPup overlay.
+# Neither TV entity reports "playing" for native apps (Cast shows idle, Android
+# TV Remote only on/off), so send MEDIA_PAUSE - pause-only, a no-op when
+# already paused - rather than play/pause, which would toggle.
+tv_alert:
+  alias: TV alert (pause + message)
+  description: Pause the Playroom TV and show a message on screen via PiPup
+  icon: mdi:television-pause
+  mode: queued
+  max: 3
+  fields:
+    message:
+      name: Message
+      required: true
+      example: Someone is at the front door
+      selector:
+        text:
+    title:
+      name: Title
+      default: Home
+      example: Front door
+      selector:
+        text:
+    duration:
+      name: Duration
+      description: Seconds to show the message
+      default: 15
+      selector:
+        number:
+          min: 3
+          max: 120
+          unit_of_measurement: s
+    pause:
+      name: Pause playback
+      default: true
+      selector:
+        boolean:
+  sequence:
+    - if:
+        - condition: template
+          value_template: "{{ pause | default(true) | bool }}"
+        - condition: state
+          entity_id: remote.play_room_tv
+          state: "on"
+        - condition: template
+          value_template: >-
+            {{ state_attr('media_player.play_room_tv_2', 'app_id')
+               not in ['com.google.android.tvlauncher', 'com.google.android.apps.tv.launcherx'] }}
+      then:
+        - action: remote.send_command
+          target:
+            entity_id: remote.play_room_tv
+          data:
+            command: MEDIA_PAUSE
+          continue_on_error: true
+        # Let the key reach the app before the overlay appears.
+        - delay: { milliseconds: 500 }
+    - condition: state
+      entity_id: binary_sensor.pipup_play_room_tv_connectivity
+      state: "on"
+    - action: pipup.send
+      target:
+        entity_id: notify.pipup_play_room_tv
+      data:
+        title: "{{ title | default('Home') }}"
+        message: "{{ message }}"
+        duration: "{{ duration | default(15) | int }}"
+        position: 4
+        urgency: warning
+      continue_on_error: true

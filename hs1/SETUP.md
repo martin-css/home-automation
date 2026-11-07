@@ -268,6 +268,7 @@ via the `get.hacs.xyz` script. Custom integrations live in
 | `hacs`             | 2.0.5   | release zip   | Community store |
 | `octopus_energy`   | via HACS | HACS         | Octopus electricity + gas, tariffs, Home Mini |
 | Bubble Card (frontend) | 3.4.3 | HACS      | Cards used by the Home dashboard (`config/www/community/`, resource registered by HACS) |
+| `pipup`            | 0.3.1   | HACS          | On-screen TV notifications via the PiPup app on the Playroom TV (Sony Google TV, 192.168.1.169:7979) |
 
 Install HACS (`unzip` isn't on hs1, so Python extracts it):
 
@@ -284,6 +285,27 @@ cd /srv/homeassistant && sudo docker compose restart
 Then in HA: *Settings → Devices & services → Add integration → HACS*, accept
 the notices and authorise with GitHub (device code). Update HACS itself and
 its integrations from the HACS page; HA shows them as updates.
+
+#### Scripts and automations
+
+`scripts.yaml` and `automations.yaml` are in git (both also editable in the UI;
+UI edits rewrite the file on hs1, so copy changes back to the repo).
+
+| Name | What it does |
+|------|--------------|
+| `script.hot_water_boost_1h` / `_cancel` | Hive hot water boost for 1 h / cancel |
+| `script.tv_alert` | Pause the Playroom TV (if on and not on the home screen) and show a PiPup message. Fields: `message`, `title`, `duration`, `pause` |
+| `automation.doorbell_alert_on_tv` | Ring doorbell press -> `tv_alert` "Someone is at the front door"; 30 s debounce |
+
+Notes:
+- Neither Playroom TV entity reports "playing" for native apps (Cast shows
+  `idle`, Android TV Remote only on/off), so `tv_alert` sends the pause-only
+  `MEDIA_PAUSE` key (a no-op if already paused), never play/pause.
+- The Ring doorbell event entity (`event.front_door_ding`) uses event type
+  `ring`, not `ding`.
+- PiPup needs the PiPup app installed and allowed to draw over other apps on the
+  TV. PiPup buttons call back to HA's internal URL, which the TV can't resolve
+  (router DNS rebind protection), so the alerts don't use buttons.
 
 #### Dashboards
 

@@ -1,0 +1,27 @@
+# Automations (also editable in the UI: Settings -> Automations & scenes).
+# Keep an `id` on each so the UI editor can open it.
+
+- id: front_door_ring_tv_alert
+  alias: Doorbell - alert on TV
+  description: When the Ring doorbell is pressed, pause the Playroom TV and show a message
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: state
+      entity_id: event.front_door_ding
+      not_from: unavailable
+  conditions:
+    # The event entity's state is the timestamp of the last ding; ignore
+    # restarts/reconnects (unknown/unavailable), and only act on doorbell presses (event_type "ring").
+    - condition: template
+      value_template: >-
+        {{ trigger.to_state.state not in ['unknown', 'unavailable']
+           and trigger.to_state.attributes.event_type == 'ring' }}
+  actions:
+    - action: script.tv_alert
+      data:
+        title: Front door
+        message: Someone is at the front door
+        duration: 20
+    # Debounce repeated presses (mode: single drops triggers while running).
+    - delay: { seconds: 30 }

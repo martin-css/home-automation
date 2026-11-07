@@ -4,6 +4,9 @@ default_config:
 # Scripts (also editable in the UI: Settings -> Automations & scenes -> Scripts)
 script: !include scripts.yaml
 
+# Automations (also editable in the UI: Settings -> Automations & scenes)
+automation: !include automations.yaml
+
 # Dashboards defined in YAML (versioned in git). Edit the file, refresh the
 # browser. Adding/removing a dashboard here needs a restart.
 lovelace:
