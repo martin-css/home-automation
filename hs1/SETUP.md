@@ -227,6 +227,12 @@ To add a device: add a user as above, add a `user <name>` block to `config/acl`
 (normally `readwrite <device>/#` and `write homeassistant/#` for discovery),
 then `sudo docker compose restart mosquitto`.
 
+> **Don't use `docker kill` (even `-s HUP`) to reload any container.** Docker
+> treats every `docker kill` as a manual stop, so `restart: unless-stopped`
+> will not start that container after the next reboot. Use
+> `docker compose restart <svc>`, or for a live reload without a restart
+> `docker compose exec mosquitto kill -HUP 1`.
+
 | User            | Used by                 | Topics                                   |
 |-----------------|-------------------------|------------------------------------------|
 | `homeassistant` | HA MQTT integration     | all                                      |
