@@ -299,14 +299,16 @@ ssh martin@192.168.1.2 'sudo install -m 644 /tmp/home.yaml /srv/homeassistant/co
 ```
 
 Layout: summary sections on the main view; per-floor heating, energy and
-appliance detail are Bubble pop-ups (`#ground`, `#first`, `#energy`,
-`#appliances`) opened from the bottom bar. Avoid YAML anchors/merge keys in
-dashboards: HA logs a duplicate-key warning for every override. The Ring camera
-is deliberately not on the dashboard, because live view creates Ring events.
+appliance detail and the weather forecast are Bubble pop-ups (`#ground`,
+`#first`, `#energy`, `#appliances`, `#weather`) opened from the bottom bar.
+Weather is the built-in Met.no integration (`weather.forecast_home`). Avoid YAML anchors/merge keys in
+dashboards: HA logs a duplicate-key warning for every override. The Ring card
+shows the snapshot preview only; a Ring event is created only when someone
+presses play for live view.
 
 Set it as the default (Settings -> Dashboards -> Home -> *Set as default*);
-the auto-generated Overview stays as a fallback. The Map and Martin dashboards
-are storage-mode (UI-edited, not in git).
+the auto-generated Overview stays as a fallback. The Map dashboard is
+storage-mode (UI-edited, not in git).
 
 #### Octopus Energy
 

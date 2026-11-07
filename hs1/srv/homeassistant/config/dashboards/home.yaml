@@ -38,12 +38,48 @@ views:
                 icon: mdi:doorbell
                 state_content: state
                 state_background: false
+          # Snapshot preview only; tapping opens the dialog, where pressing
+          # play starts live view (that is what creates a Ring event).
+          - type: picture-entity
+            entity: camera.front_door_live_view
+            camera_view: auto
+            show_name: false
+            show_state: false
+            tap_action:
+              action: more-info
           - type: custom:bubble-card
             card_type: button
             button_type: switch
             entity: switch.front_door_motion_detection
             name: Ring motion detection
             icon: mdi:motion-sensor
+
+          - type: custom:bubble-card
+            card_type: separator
+            name: Weather
+            icon: mdi:weather-partly-cloudy
+          - type: custom:bubble-card
+            card_type: button
+            button_type: state
+            entity: weather.forecast_home
+            name: Now
+            state_content:
+              - state
+              - temperature
+            tap_action:
+              action: navigate
+              navigation_path: "#weather"
+            sub_button:
+              - entity: weather.forecast_home
+                name: Humidity
+                icon: mdi:water-percent
+                state_content: humidity
+                state_background: false
+              - entity: weather.forecast_home
+                name: Wind
+                icon: mdi:weather-windy
+                state_content: wind_speed
+                state_background: false
 
       # ---------------------------------------------------------------- Hot water + main heating
       - type: grid
@@ -452,6 +488,24 @@ views:
                     state_content: state
                     state_background: false
 
+          - type: custom:bubble-card
+            card_type: pop-up
+            hash: "#weather"
+            name: Weather
+            icon: mdi:weather-partly-cloudy
+            entity: weather.forecast_home
+            cards:
+              - type: weather-forecast
+                entity: weather.forecast_home
+                forecast_type: hourly
+                show_current: true
+                show_forecast: true
+              - type: weather-forecast
+                entity: weather.forecast_home
+                forecast_type: daily
+                show_current: false
+                show_forecast: true
+
           # Must be the last card in the view.
           - type: custom:bubble-card
             card_type: horizontal-buttons-stack
@@ -468,3 +522,6 @@ views:
             4_link: "#appliances"
             4_name: Appliances
             4_icon: mdi:washing-machine
+            5_link: "#weather"
+            5_name: Weather
+            5_icon: mdi:weather-partly-cloudy
